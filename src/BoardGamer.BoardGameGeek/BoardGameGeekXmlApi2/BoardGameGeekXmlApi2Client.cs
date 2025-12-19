@@ -989,6 +989,7 @@ namespace BoardGamer.BoardGameGeek.BoardGameGeekXmlApi2
             for (int retry = 0; retry <= maxRetries; retry++)
             {
                 HttpRequestMessage httpRequest = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+                httpRequest.Headers.Add("Authorization", "none");
                 HttpResponseMessage httpResponse = await this.http.SendAsync(httpRequest).ConfigureAwait(false);
 
                 if (!httpResponse.IsSuccessStatusCode)

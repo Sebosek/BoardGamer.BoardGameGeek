@@ -37,7 +37,8 @@ namespace BoardGamer.BoardGameGeek.BoardGameGeekXmlApi2
             int? minPlays = null,
             int? maxPlays = null,
             int? collectionId = null,
-            DateTime? modifiedSince = null)
+            DateTime? modifiedSince = null,
+            IEnumerable<Type> types = null)
         {
             UserName = username;
             Version = version;
@@ -68,6 +69,7 @@ namespace BoardGamer.BoardGameGeek.BoardGameGeekXmlApi2
             MaxPlays = maxPlays;
             CollectionId = collectionId;
             ModifiedSince = modifiedSince;
+            Types = types;
             RelativeUrl = BuildRelativeUrl();
         }
 
@@ -187,6 +189,9 @@ namespace BoardGamer.BoardGameGeek.BoardGameGeekXmlApi2
         /// Restricts the collection results to only those items which has had a status change or has been added since the specified date.
         /// </summary>
         public DateTime? ModifiedSince { get; }
+
+        public IEnumerable<Type> Types { get; }
+
         /// <summary>
         /// The relative url to the BGG XML API2 that represents this request.
         /// </summary>
@@ -224,7 +229,8 @@ namespace BoardGamer.BoardGameGeek.BoardGameGeekXmlApi2
                 .AddQueryArgument("minplays", MinPlays)
                 .AddQueryArgument("maxplays", MaxPlays)
                 .AddQueryArgument("collid", CollectionId)
-                .AddQueryArgument("modifiedsince", ModifiedSince, "yy-MM-dd");
+                .AddQueryArgument("modifiedsince", ModifiedSince, "yy-MM-dd")
+                .AddQueryArgument("type", Types);
 
             return builder.ToUrl();
         }
