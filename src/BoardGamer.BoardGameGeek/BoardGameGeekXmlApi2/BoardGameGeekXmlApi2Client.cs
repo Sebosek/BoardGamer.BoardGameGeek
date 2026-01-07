@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using System.Xml.XPath;
@@ -11,11 +12,11 @@ namespace BoardGamer.BoardGameGeek.BoardGameGeekXmlApi2
 {
     public class BoardGameGeekXmlApi2Client : IBoardGameGeekXmlApi2Client
     {
-        public static readonly Uri BaseUrl = new Uri("https://www.boardgamegeek.com/xmlapi2/");
-
         private readonly HttpClient http;
+        private readonly Uri baseUrl;
         private readonly int maxRetries;
         private readonly int delayMs;
+        private readonly Func<Task<string>> apiTokenFactory;
 
         public BoardGameGeekXmlApi2Client(HttpClient http, BoardGameGeekXmlApi2ClientOptions options = null)
         {
@@ -29,8 +30,10 @@ namespace BoardGamer.BoardGameGeek.BoardGameGeekXmlApi2
             }
 
             this.http = http;
+            this.baseUrl = options.BaseAddress ?? throw new ArgumentNullException(nameof(options.BaseAddress));
             this.maxRetries = options.MaxRetries >= 0 ? options.MaxRetries : 0;
             this.delayMs = options.Delay >= TimeSpan.Zero ? Convert.ToInt32(options.Delay.TotalMilliseconds) : 0;
+            this.apiTokenFactory = options.ApiTokenFactory ?? throw new ArgumentNullException(nameof(options.ApiTokenFactory));
         }
 
         public async Task<CollectionResponse> GetCollectionAsync(CollectionRequest request)
@@ -984,12 +987,13 @@ namespace BoardGamer.BoardGameGeek.BoardGameGeekXmlApi2
 
         private async Task<XDocument> GetXDocumentAsync(Uri relativeUri)
         {
-            Uri requestUrl = new Uri(BaseUrl, relativeUri);
+            Uri requestUrl = new Uri(baseUrl, relativeUri);
+            string apiToken = await apiTokenFactory().ConfigureAwait(false);
 
             for (int retry = 0; retry <= maxRetries; retry++)
             {
                 HttpRequestMessage httpRequest = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-                httpRequest.Headers.Add("Authorization", "none");
+                httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiToken);
                 HttpResponseMessage httpResponse = await this.http.SendAsync(httpRequest).ConfigureAwait(false);
 
                 if (!httpResponse.IsSuccessStatusCode)
@@ -998,7 +1002,7 @@ namespace BoardGamer.BoardGameGeek.BoardGameGeekXmlApi2
                     throw new Exception("An error occurred.");
                 }
 
-                if (httpResponse.StatusCode == System.Net.HttpStatusCode.Accepted)
+                if (httpResponse.StatusCode == HttpStatusCode.Accepted)
                 {
                     await Task.Delay(delayMs).ConfigureAwait(false);
                     continue;
